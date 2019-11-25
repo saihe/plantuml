@@ -1,0 +1,16 @@
+@startuml 送金サブシステム ER図.png
+
+title "送金サブシステム ER図"
+
+entity "アプリユーザ" as app_user{
+    * **ID id bigint identity(8) identity [pk]**
+    # payment_method_id bigint not null [fk]
+}
+
+entity "決済手段" as peyment_method{
+    * **ID id bigint identity(8) identity [pk]**
+}
+
+peyment_method -{ app_user
+
+@enduml
