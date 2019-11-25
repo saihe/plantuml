@@ -37,6 +37,15 @@ let entity = {
 }
 let entities = [];
 
+function findIndex(indexes, colmun) {
+  return indexes.filter(index => {
+    console.log(index.colmuns);
+    // if (index.colmuns.filter(col => col == colmun.figicalColmunName)) {
+    //   return true;
+    // }
+  })
+}
+
 
 // アプリユーザのDDL作成（サンプル）
 let workSheet = book.Sheets["アプリユーザ"]
@@ -69,6 +78,7 @@ try{
         entity.tableName = tableName;
       }
       if (schema == "colmun") {
+        colmun = {};
         colmun.logicalColmunName = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:1, r:rowCount})]).v;
         colmun.figicalColmunName = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:2, r:rowCount})]).v;
         colmun.domainName = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:3, r:rowCount})]).v;
@@ -80,12 +90,18 @@ try{
         entity.colmuns.push(colmun);
       }
       if (schema == "index") {
+        index = {};
         index.name = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:1, r:rowCount})]).v;
-        index.colmuns = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:2, r:rowCount})]).v;
         index.foreign = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:3, r:rowCount})]).v;
         index.cascade = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:4, r:rowCount})]).v;
         index.unique = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:5, r:rowCount})]).v;
         index.remark = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:8, r:rowCount})]).v;
+  
+        index.colmuns = [];
+        const tmpColmuns = utils.defaultCellString(workSheet[XLSX.utils.encode_cell({c:2, r:rowCount})]).v.split(",");
+        tmpColmuns.forEach(ti => {
+          index.colmuns.push(ti.trim());
+        });
         entity.indexes.push(index);
       }
     }
@@ -100,13 +116,17 @@ try {
   if (fs.existsSync(outputFile)) {
     fs.unlinkSync(outputFile);
   }
-  outputContext.push("@startplantuml " + systemName);
+  outputContext.push("@startuml " + systemName);
   entities.forEach(e => {
     if (e.tableName.figical != undefined) {
       // 整形
-      outputContext.push("enitty \"" + e.tableName.logical + "\" as " + e.tableName.figical + "{");
+      outputContext.push("entity \"" + e.tableName.logical + "\" as " + e.tableName.figical + "{");
       e.colmuns.forEach(c => {
         if (e.indexes.length > 0) {
+          if (findIndex(e.indexes, c)) {
+            console.log("インデックスあり");
+            console.log(c);
+          }
           e.indexes.forEach(i => {
             if (
               i.colmuns.match(idx => idx == c.figicalColmunName)
@@ -121,8 +141,8 @@ try {
                 + " "
                 + c.dataType
                 + " "
-                + (c.indentity == "yes") ? "identity " : ""
-                + c.notNull
+                + ((c.indentity == "yes") ? "Identity " : "")
+                + ((c.notNull == "yes") ? "Not Null " : "")
                 + " "
                 + "[pk]"
                 + " **"
@@ -138,15 +158,16 @@ try {
             + " "
             + c.dataType
             + " "
-            + (c.indentity == "yes") ? "identity " : ""
-            + c.notNull
+            + ((c.indentity == "yes") ? "Identity " : "")
+            + ((c.notNull == "yes") ? "Not Null " : "")
             + ""
           );
         }
       });
     }
   });
-  outputContext.push("@endplantuml");
+  outputContext.push("}");
+  outputContext.push("@enduml");
   fs.writeFileSync(outputFile, outputContext.join("\n"), {encoding: "UTF-8"});
 } catch(e) {
   console.log("ファイル出力エラー", e);

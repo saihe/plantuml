@@ -1,3 +1,0 @@
-@startplantuml ICD_P2P
-enitty "アプリユーザ" as app_user{
-@endplantuml
